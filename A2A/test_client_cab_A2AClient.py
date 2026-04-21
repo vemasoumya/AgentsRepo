@@ -50,21 +50,30 @@ def extract_agent_response(event):
     return None
 
 
-async def send_message(client, text: str) -> str:
+async def send_message(client, text: str, context_id : str) -> str:
     """Send a message and return the agent's response text."""
+    message_id_gen = str(uuid.uuid4())
+    print(f"Sending message with ID: {message_id_gen}")
     msg = Message(
         role=Role.user,
-        messageId=str(uuid.uuid4()),
+        message_id=message_id_gen,
+        context_id = context_id,
         parts=[TextPart(text=text)],
     )
     agent_text = None
+    # async for event in client.send_message(msg):
+    #     print(f"Received event: {event}")
+    #     t = extract_agent_response(event)
+    #     if t:
+    #         print(f"  Extract text: {t}")
+    #         agent_text = t
+    # return agent_text or "(no response)"
+    
     async for event in client.send_message(msg):
-        print(f"Received event: {event}")
+        print(f"Received event in non stream")
         t = extract_agent_response(event)
-        if t:
-            print(f"  Extract text: {t}")
-            agent_text = t
-    return agent_text or "(no response)"
+        if t:                
+            print(t, end="", flush=True)
 
 
 async def main():
@@ -78,39 +87,32 @@ async def main():
         config = ClientConfig(httpx_client=httpx_client, streaming=False)
         factory = ClientFactory(config)
 
-        # --- Non-streaming messages ---
+        #--- Non-streaming messages ---
         print("\n=== Non-Streaming Messages ===\n")
 
         client = factory.create(cards["Cab_Agent"])
         response = await send_message(
             client,
             "Book a cab in Hyderabad from MS office to Gachibowli at 6 PM tomorrow",
+            "1234"
         )
-        print(f"[CabBooking] {response}\n")
-
-       
-        # --- Streaming messages ---
-        # print("=== Streaming Messages ===\n")
-
-        # stream_config = ClientConfig(httpx_client=httpx_client, streaming=True)
-        # stream_factory = ClientFactory(stream_config)
-
-        # client_stream = stream_factory.create(cards["Cab_Agent"])
-        
-        # Explicitly create message with non-blocking configuration for streaming
-        # msg_config = MessageSendConfiguration(blocking=False)
-        # message = Message(
-        #     role=Role.user,
-        #     messageId=str(uuid.uuid4()),                
-        #     parts=[TextPart(text="Book a cab in Hyderabad from MS office to Gachibowli at 6 PM tomorrow")],
+        print(f"[CabBooking1] {response}\n")
+        # response = await send_message(
+        #     client,
+        #     "Confirm the booking",
+        #     "1234"
         # )
         
-        # async for event in client_stream.send_message(message, configuration=msg_config):
-        #     t = extract_agent_response(event)
-        #     if t:
-        #         print(f"Received chunk:")
-        #         print(t, end="", flush=True)
-        # print("\n")
+        # print(f"[CabBooking2] {response}\n")
+        # response = await send_message(
+        #     client,
+        #     "Whats the booking id of my Cab booking",
+        #     "1234"
+        # )        
+        # print(f"[CabBooking3] {response}\n")
+
+       
+       
 
         
         
